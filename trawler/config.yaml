@@ -1,0 +1,17 @@
+# Trawler catalog + per-table mapping (local dev sample).
+#
+# Secrets/connection come from the environment (TRAWLER_PG_DSN, TRAWLER_REDIS_ADDR);
+# this file carries the catalog and the table → shared-stream mapping.
+#
+# Enrichment (lookups / per-table enrich rules) is intentionally NOT handled by
+# Trawler in this iteration — it will live in a separate microservice. Extra
+# keys are ignored, so an enrichment-bearing config still loads here.
+
+instance_id: bayer-17909
+cdc_table: public.cdc_events
+
+tables:
+  orders:
+    emit: cdc.orders
+  products:
+    emit: cdc.products

@@ -1,0 +1,54 @@
+services:
+
+  # ── Postgres (plain; no logical replication required) ──────────────────────
+  postgres:
+    image: postgres:16
+    container_name: tr_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mydb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d mydb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: tr_redis
+    ports:
+      - "6380:6379"   # 6379 often busy on host; container-internal port is 6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Trawler ──────────────────────────────────────────────────────────────────
+  trawler:
+    build: ./trawler
+    container_name: tr_trawler
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      TRAWLER_PG_DSN: "postgres://postgres:postgres@postgres:5432/mydb"
+      TRAWLER_REDIS_ADDR: "redis:6379"
+      TRAWLER_CONFIG: "/config.yaml"
+      TRAWLER_POLL_INTERVAL: "1s"
+      TRAWLER_BATCH_SIZE: "100"
+    volumes:
+      - ./trawler/config.yaml:/config.yaml:ro
+    restart: on-failure
+
+volumes:
+  pg_data:
