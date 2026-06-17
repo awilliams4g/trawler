@@ -70,7 +70,7 @@ databases can fan into one stream per logical event type.
 | `TRAWLER_POLL_INTERVAL` | `1s` | Idle poll cadence (when the capture table is empty) |
 | `TRAWLER_BATCH_SIZE` | `100` | Max rows claimed per cycle |
 | `TRAWLER_ESCALATE_AFTER` | `10` | Consecutive transient failures before WARN→ERROR |
-| `SLOG_LEVEL` | `info` | Log level: `debug`/`info`/`warn`/`error`. `debug` logs each relayed change |
+| `SLOG_LEVEL` | `info` | Log level: `trace`/`debug`/`info`/`warn`/`error`. `debug` logs each relayed change; `trace` additionally logs the full row payload (`data`/`old`) — may contain sensitive fields, dev only |
 
 ### YAML (catalog + per-table mapping)
 

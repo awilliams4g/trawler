@@ -17,10 +17,13 @@ import (
 )
 
 // setupLogging installs the default slog logger at the level named by
-// SLOG_LEVEL (debug|info|warn|error; default info).
+// SLOG_LEVEL (trace|debug|info|warn|error; default info). trace additionally
+// logs each relayed change's full row payload.
 func setupLogging() {
 	level := slog.LevelInfo
 	switch strings.ToLower(os.Getenv("SLOG_LEVEL")) {
+	case "trace":
+		level = cdc.LevelTrace
 	case "debug":
 		level = slog.LevelDebug
 	case "info", "":
@@ -30,7 +33,19 @@ func setupLogging() {
 	case "error":
 		level = slog.LevelError
 	}
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+	opts := &slog.HandlerOptions{
+		Level: level,
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
+			// Render the custom trace level as "TRACE" instead of "DEBUG-4".
+			if a.Key == slog.LevelKey {
+				if lvl, ok := a.Value.Any().(slog.Level); ok && lvl == cdc.LevelTrace {
+					a.Value = slog.StringValue("TRACE")
+				}
+			}
+			return a
+		},
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, opts)))
 }
 
 func main() {

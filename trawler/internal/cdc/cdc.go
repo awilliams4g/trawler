@@ -11,6 +11,7 @@ package cdc
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -23,6 +24,11 @@ const (
 	minBackoff = 100 * time.Millisecond
 	maxBackoff = 30 * time.Second
 )
+
+// LevelTrace is a custom slog level below Debug. At this level the relay logs
+// each change's full row payload (data/old), which may contain sensitive
+// fields — intended for local debugging only.
+const LevelTrace = slog.Level(-8)
 
 // ErrUnmappedTable is returned when a captured row references a table that has
 // no emit mapping in config. It is fatal: triggers must only be attached to
@@ -182,7 +188,22 @@ func (r *Relay) cycle(ctx context.Context) (int, error) {
 		if err := r.emit.Write(ctx, stream, c); err != nil {
 			return 0, fmt.Errorf("emit id=%d: %w", row.ID, err)
 		}
-		slog.Debug("relayed change", "op", c.Op, "schema", c.Schema, "table", c.Table, "id", c.ID, "stream", stream)
+		if slog.Default().Enabled(ctx, LevelTrace) {
+			// Trace: include the full row payload(s). Marshalled only when the
+			// trace level is active to avoid cost on the normal path.
+			attrs := []any{"op", c.Op, "schema", c.Schema, "table", c.Table, "id", c.ID, "stream", stream}
+			if dataJSON, mErr := json.Marshal(c.Data); mErr == nil {
+				attrs = append(attrs, "data", string(dataJSON))
+			}
+			if c.Old != nil {
+				if oldJSON, mErr := json.Marshal(c.Old); mErr == nil {
+					attrs = append(attrs, "old", string(oldJSON))
+				}
+			}
+			slog.Log(ctx, LevelTrace, "relayed change", attrs...)
+		} else {
+			slog.Debug("relayed change", "op", c.Op, "schema", c.Schema, "table", c.Table, "id", c.ID, "stream", stream)
+		}
 		ids = append(ids, row.ID)
 	}
 
