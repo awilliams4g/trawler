@@ -43,11 +43,16 @@ func (s *Sink) Write(ctx context.Context, stream string, c model.Change) error {
 		return fmt.Errorf("marshal data: %w", err)
 	}
 
+	id := strconv.FormatInt(c.ID, 10)
 	values := []any{
 		"op", c.Op,
 		"table", c.Table,
 		"schema", c.Schema,
-		"id", strconv.FormatInt(c.ID, 10),
+		"id", id,
+		// lsn is a transitional alias of id, emitted so consumers still keying
+		// on WALker's `lsn` field (the role id now plays) keep working. Remove
+		// once all consumers dedup on `id`.
+		"lsn", id,
 		"source", s.source,
 		"streamed_at", time.Now().UTC().Format(time.RFC3339),
 		"data", string(dataJSON),

@@ -49,6 +49,7 @@ Each Redis stream entry contains:
 | `table` | e.g. `orders` |
 | `schema` | e.g. `public` |
 | `id` | capture-row id (use for dedup) |
+| `lsn` | transitional alias of `id` for WALker-era consumers; drop once all consumers dedup on `id` |
 | `source` | origin `instance_id` |
 | `streamed_at` | RFC3339 timestamp |
 | `data` | full new row (insert/update) or full old row (delete), as JSON |

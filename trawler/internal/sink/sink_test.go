@@ -40,6 +40,7 @@ func TestWriteInsertSharedKeyAndSource(t *testing.T) {
 	assert.Equal(t, "orders", f["table"])
 	assert.Equal(t, "public", f["schema"])
 	assert.Equal(t, "42", f["id"], "capture-row id is the dedup token")
+	assert.Equal(t, "42", f["lsn"], "lsn is a transitional alias of id for WALker-era consumers")
 	assert.Equal(t, "bayer-17909", f["source"], "origin instance is in source, not the key")
 	assert.Contains(t, f, "streamed_at")
 	assert.NotContains(t, f, "old", "insert has no old")
