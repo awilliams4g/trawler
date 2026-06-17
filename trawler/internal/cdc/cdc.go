@@ -182,6 +182,7 @@ func (r *Relay) cycle(ctx context.Context) (int, error) {
 		if err := r.emit.Write(ctx, stream, c); err != nil {
 			return 0, fmt.Errorf("emit id=%d: %w", row.ID, err)
 		}
+		slog.Debug("relayed change", "op", c.Op, "schema", c.Schema, "table", c.Table, "id", c.ID, "stream", stream)
 		ids = append(ids, row.ID)
 	}
 
@@ -192,6 +193,7 @@ func (r *Relay) cycle(ctx context.Context) (int, error) {
 		return 0, fmt.Errorf("commit: %w", err)
 	}
 	committed = true
+	slog.Info("relayed batch", "count", len(rows))
 	return len(rows), nil
 }
 

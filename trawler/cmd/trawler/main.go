@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -15,7 +16,26 @@ import (
 	"4gclinical.com/trawler/internal/sink"
 )
 
+// setupLogging installs the default slog logger at the level named by
+// SLOG_LEVEL (debug|info|warn|error; default info).
+func setupLogging() {
+	level := slog.LevelInfo
+	switch strings.ToLower(os.Getenv("SLOG_LEVEL")) {
+	case "debug":
+		level = slog.LevelDebug
+	case "info", "":
+		level = slog.LevelInfo
+	case "warn", "warning":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: level})))
+}
+
 func main() {
+	setupLogging()
+
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("invalid configuration", "err", err)
